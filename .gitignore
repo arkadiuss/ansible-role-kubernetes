@@ -3,3 +3,6 @@
 *.pyc
 .cache
 
+venv/
+.vagrant/
+tests/roles/

@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Output ansible dist
+      debug:
+        msg: "{{ ansible_os_family }} | {{ ansible_distribution }}"
+  
+  roles:
+    - geerlingguy.containerd
+    - ../../ansible-role-kubernetes
