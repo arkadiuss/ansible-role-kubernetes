@@ -29,7 +29,6 @@
 - name: Print the init output to screen.
   debug:
     var: kubeadmin_init.stdout
-    verbosity: 2
 
 - name: Ensure .kube directory exists.
   file:
