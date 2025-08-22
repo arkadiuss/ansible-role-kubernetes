@@ -1,6 +1,6 @@
 # Ansible Role: Kubernetes
 
-[![CI](https://github.com/geerlingguy/ansible-role-kubernetes/workflows/CI/badge.svg?event=push)](https://github.com/geerlingguy/ansible-role-kubernetes/actions?query=workflow%3ACI)
+[![CI](https://github.com/geerlingguy/ansible-role-kubernetes/actions/workflows/ci.yml/badge.svg)](https://github.com/geerlingguy/ansible-role-kubernetes/actions/workflows/ci.yml)
 
 An Ansible Role that installs [Kubernetes](https://kubernetes.io) on Linux.
 
@@ -27,8 +27,8 @@ kubernetes_packages:
 Kubernetes packages to be installed on the server. You can either provide a list of package names, or set `name` and `state` to have more control over whether the package is `present`, `absent`, `latest`, etc.
 
 ```yaml
-kubernetes_version: '1.25'
-kubernetes_version_rhel_package: '1.25.1'
+kubernetes_version: '1.32'
+kubernetes_version_rhel_package: '1.32'
 ```
 
 The minor version of Kubernetes to install. The plain `kubernetes_version` is used to pin an apt package version on Debian, and as the Kubernetes version passed into the `kubeadm init` command (see `kubernetes_version_kubeadm`). The `kubernetes_version_rhel_package` variable must be a specific Kubernetes release, and is used to pin the version on Red Hat / CentOS servers.
@@ -141,8 +141,7 @@ Options passed to `kubeadm init` when initializing the Kubernetes control plane.
 
 ```yaml
 kubernetes_apt_release_channel: "stable"
-kubernetes_apt_keyring_file: "/etc/apt/keyrings/kubernetes-apt-keyring.asc"
-kubernetes_apt_repository: "deb [signed-by={{ kubernetes_apt_keyring_file }}] https://pkgs.k8s.io/core:/{{ kubernetes_apt_release_channel }}:/v{{ kubernetes_version }}/deb/ /"
+kubernetes_apt_repository: "https://pkgs.k8s.io/core:/{{ kubernetes_apt_release_channel }}:/v{{ kubernetes_version }}/deb/"
 ```
 
 Apt repository options for Kubernetes installation.
