@@ -9,8 +9,8 @@ kubernetes_packages:
   - name: kubernetes-cni
     state: present
 
-kubernetes_version: '1.33'
-kubernetes_version_rhel_package: '1.33'
+kubernetes_version: '1.35'
+kubernetes_version_rhel_package: '1.35'
 
 kubernetes_role: control_plane
 
@@ -39,7 +39,7 @@ kubernetes_config_kubelet_configuration:
 
 kubernetes_config_init_configuration:
   localAPIEndpoint:
-    advertiseAddress: "{{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}"
+    advertiseAddress: "{{ kubernetes_apiserver_advertise_address | default(ansible_facts.default_ipv4.address, true) }}"
 # if you use the next lines, remove the command line argument below
 # nodeRegistration:
 #    ignorePreflightErrors:

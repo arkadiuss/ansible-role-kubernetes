@@ -1,6 +1,26 @@
 # Ansible Role: Kubernetes
 
-[![CI](https://github.com/geerlingguy/ansible-role-kubernetes/actions/workflows/ci.yml/badge.svg)](https://github.com/geerlingguy/ansible-role-kubernetes/actions/workflows/ci.yml)
+Battle-tested fork of [geerlingguy/ansible-role-kubernetes](https://github.com/geerlingguy/ansible-role-kubernetes) with control plane upgrade support.
+
+## Fork changes
+
+- **Control plane upgrades** (`upgrade-setup.yml`): Handles `kubeadm upgrade` one minor version at a time. Detects current cluster version, validates the upgrade gap, upgrades kubeadm/kubelet/kubectl, restarts kubelet, waits for node readiness, and updates Calico networking.
+- **Strict ARP**: Enabled `strictARP` in kube-proxy IPVS configuration. For MetalLB
+- **kubeadm config template fixes**: Removed duplicate `apiVersion` entries, added conditional sections for kubelet and kube-proxy configuration.
+- **Ubuntu compatibility**: Tests and fixes for newer Ubuntu versions.
+
+## Upgrading Kubernetes
+
+The role automatically upgrades the control plane when `kubernetes_version` is set one minor version ahead of the running cluster. Kubernetes only supports upgrading one minor version at a time.
+
+To upgrade multiple versions (e.g. 1.31 to 1.34):
+1. Set `kubernetes_version: '1.32'` and run the playbook
+2. Set `kubernetes_version: '1.33'` and run the playbook
+3. Set `kubernetes_version: '1.34'` and run the playbook
+
+The role will fail with a clear message if you try to skip versions.
+
+---
 
 An Ansible Role that installs [Kubernetes](https://kubernetes.io) on Linux.
 
