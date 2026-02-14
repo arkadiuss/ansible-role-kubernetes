@@ -33,7 +33,13 @@
     path: /etc/kubernetes/admin.conf
   register: kubernetes_init_stat
 
-# Set up control plane.
+# Upgrade control plane if already initialized.
+- include_tasks: upgrade-setup.yml
+  when:
+    - kubernetes_role == 'control_plane'
+    - kubernetes_init_stat.stat.exists
+
+# Set up control plane (first time init).
 - include_tasks: control-plane-setup.yml
   when: kubernetes_role == 'control_plane'
 

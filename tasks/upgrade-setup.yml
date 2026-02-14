@@ -1,0 +1,74 @@
+---
+# Upgrade Kubernetes control plane when already initialized.
+# Only supports upgrading one minor version at a time (K8s requirement).
+# To upgrade multiple versions, change kubernetes_version incrementally
+# and run the playbook for each step.
+
+- name: Get current cluster version
+  command: kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'
+  register: kubelet_version_output
+  changed_when: false
+
+- name: Parse current and target versions
+  set_fact:
+    kubernetes_current_minor: "{{ kubelet_version_output.stdout | regex_replace('^v(\\d+)\\.(\\d+).*', '\\2') | int }}"
+    kubernetes_target_minor: "{{ kubernetes_version.split('.')[1] | int }}"
+
+- name: Fail if trying to skip minor versions
+  fail:
+    msg: >-
+      Kubernetes only supports upgrading one minor version at a time.
+      Current: 1.{{ kubernetes_current_minor }}, Target: 1.{{ kubernetes_target_minor }}.
+      Set kubernetes_version to '1.{{ kubernetes_current_minor | int + 1 }}' and run the playbook,
+      then increment and run again until you reach the target.
+  when:
+    - kubernetes_current_minor | int != kubernetes_target_minor | int
+    - (kubernetes_target_minor | int - kubernetes_current_minor | int) | abs > 1
+
+- name: Upgrade Kubernetes control plane
+  when:
+    - kubernetes_current_minor | int != kubernetes_target_minor | int
+    - (kubernetes_target_minor | int - kubernetes_current_minor | int) == 1
+  block:
+    - name: Upgrade kubeadm package
+      apt:
+        name: kubeadm
+        state: latest
+        allow_downgrade: true
+
+    - name: Get target kubeadm version
+      command: kubeadm version -o short
+      register: kubeadm_target_version
+      changed_when: false
+
+    - name: Apply kubeadm upgrade
+      command: "kubeadm upgrade apply {{ kubeadm_target_version.stdout }} --yes"
+
+    - name: Upgrade kubelet and kubectl packages
+      apt:
+        name: "{{ item }}"
+        state: latest
+        allow_downgrade: true
+      with_items:
+        - kubelet
+        - kubectl
+
+    - name: Restart kubelet
+      systemd:
+        name: kubelet
+        state: restarted
+        daemon_reload: true
+
+    - name: Wait for node to be ready
+      command: kubectl get nodes -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}'
+      register: node_ready
+      until: node_ready.stdout == "True"
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Update Calico networking
+      command: "kubectl apply -f {{ kubernetes_calico_manifest_file }}"
+      register: calico_upgrade_result
+      changed_when: "'configured' in calico_upgrade_result.stdout or 'created' in calico_upgrade_result.stdout"
+      when: kubernetes_pod_network.cni == 'calico'
