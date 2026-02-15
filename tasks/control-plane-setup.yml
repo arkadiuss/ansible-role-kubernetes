@@ -8,6 +8,18 @@
   template:
     src: "kubeadm-kubelet-config.j2"
     dest: "{{ kubernetes_kubeadm_kubelet_config_file_path }}"
+  register: kubeadm_config_file
+
+- name: Sync kubelet config to ConfigMap
+  command: >
+    kubeadm init phase upload-config kubelet
+    --config {{ kubernetes_kubeadm_kubelet_config_file_path }}
+  when: kubernetes_init_stat.stat.exists and kubeadm_config_file is changed
+
+- name: Apply kubelet config from ConfigMap to node
+  command: kubeadm upgrade node phase kubelet-config
+  notify: restart kubelet
+  when: kubernetes_init_stat.stat.exists and kubeadm_config_file is changed
 
 - name: Initialize Kubernetes control plane with kubeadm init
   command: >

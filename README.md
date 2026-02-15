@@ -5,7 +5,8 @@ Battle-tested fork of [geerlingguy/ansible-role-kubernetes](https://github.com/g
 ## Fork changes
 
 - **Control plane upgrades** (`upgrade-setup.yml`): Handles `kubeadm upgrade` one minor version at a time. Detects current cluster version, validates the upgrade gap, upgrades kubeadm/kubelet/kubectl, restarts kubelet, waits for node readiness, and updates Calico networking.
-- **Strict ARP**: Enabled `strictARP` in kube-proxy IPVS configuration. For MetalLB
+- **Day-2 kubelet config sync**: Changes to `kubernetes_config_kubelet_configuration` are automatically synced to the cluster ConfigMap and applied to the node on subsequent playbook runs (not just during `kubeadm init`).
+- **Strict ARP**: Enabled `strictARP` in kube-proxy IPVS configuration. For MetalLB.
 - **kubeadm config template fixes**: Removed duplicate `apiVersion` entries, added conditional sections for kubelet and kube-proxy configuration.
 - **Ubuntu compatibility**: Tests and fixes for newer Ubuntu versions.
 
