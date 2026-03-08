@@ -13,6 +13,7 @@ apiVersion: kubelet.config.k8s.io/{{ kubenetes_config_kubelet_apiversion }}
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
 {{ kubernetes_config_kubelet_configuration | to_nice_yaml }}
+{% if kubernetes_pod_network.cni != 'cilium' %}
 ---
 apiVersion: kubeproxy.config.k8s.io/{{ kubernetes_config_kubeproxy_apiversion }}
 kind: KubeProxyConfiguration
@@ -20,3 +21,4 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 mode: "ipvs"
 ipvs:
   strictARP: true
+{% endif %}

@@ -4,9 +4,10 @@ Battle-tested fork of [geerlingguy/ansible-role-kubernetes](https://github.com/g
 
 ## Fork changes
 
-- **Control plane upgrades** (`upgrade-setup.yml`): Handles `kubeadm upgrade` one minor version at a time. Detects current cluster version, validates the upgrade gap, upgrades kubeadm/kubelet/kubectl, restarts kubelet, waits for node readiness, and updates Calico networking.
+- **Control plane upgrades** (`upgrade-setup.yml`): Handles `kubeadm upgrade` one minor version at a time. Detects current cluster version, validates the upgrade gap, upgrades kubeadm/kubelet/kubectl, restarts kubelet, waits for node readiness, and updates CNI networking.
+- **Cilium CNI support** (`cilium-setup.yml`): Installs and upgrades Cilium via `cilium-cli` (downloaded from GitHub releases — no Helm binary required). Handles idempotent install/upgrade: skips upgrade when neither the CLI version (`kubernetes_cilium_cli_version`) nor the Helm values (`kubernetes_cilium_values`) have changed. kube-proxy is skipped at `kubeadm init` time when `cni: 'cilium'` is set.
 - **Day-2 kubelet config sync**: Changes to `kubernetes_config_kubelet_configuration` are automatically synced to the cluster ConfigMap and applied to the node on subsequent playbook runs (not just during `kubeadm init`).
-- **Strict ARP**: Enabled `strictARP` in kube-proxy IPVS configuration. For MetalLB.
+- **Strict ARP**: Enabled `strictARP` in kube-proxy IPVS configuration (skipped automatically when using Cilium).
 - **kubeadm config template fixes**: Removed duplicate `apiVersion` entries, added conditional sections for kubelet and kube-proxy configuration.
 - **Ubuntu compatibility**: Tests and fixes for newer Ubuntu versions.
 
@@ -145,12 +146,31 @@ kubernetes_pod_network:
   # cni: 'calico'
   # cidr: '192.168.0.0/16'
   #
+  # Cilium CNI (also replaces kube-proxy and MetalLB).
+  # cni: 'cilium'
+  # cidr: '10.200.0.0/16'
+  #
   # Weave CNI.
   # cni: 'weave'
   # cidr: '192.168.0.0/16'
 ```
 
-This role currently supports `flannel` (default), `calico` or `weave` for cluster pod networking. Choose only one for your cluster; converting between them is not done automatically and could result in broken networking; if you need to switch from one to another, it should be done outside of this role.
+This role currently supports `flannel` (default), `calico`, `cilium`, or `weave` for cluster pod networking. Choose only one for your cluster; converting between them requires a cluster reset (`kubeadm reset`) and is not done automatically.
+
+When using `cilium`, also set:
+
+```yaml
+kubernetes_cilium_cli_version: "v0.19.2"   # cilium-cli release tag
+
+kubernetes_cilium_values:                   # passed as Helm values to cilium install/upgrade
+  kubeProxyReplacement: true
+  k8sServiceHost: "{{ ansible_facts.default_ipv4.address }}"
+  k8sServicePort: "6443"
+  ipam:
+    mode: kubernetes
+```
+
+And add `skipPhases: [addon/kube-proxy]` to `kubernetes_config_init_configuration` so kubeadm does not install kube-proxy.
 
 ```yaml
 kubernetes_apiserver_advertise_address: ''`

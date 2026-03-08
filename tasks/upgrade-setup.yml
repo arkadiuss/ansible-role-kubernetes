@@ -72,3 +72,7 @@
       register: calico_upgrade_result
       changed_when: "'configured' in calico_upgrade_result.stdout or 'created' in calico_upgrade_result.stdout"
       when: kubernetes_pod_network.cni == 'calico'
+
+    - name: Upgrade Cilium networking
+      ansible.builtin.include_tasks: cilium-setup.yml
+      when: kubernetes_pod_network.cni == 'cilium'
