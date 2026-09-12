@@ -49,13 +49,17 @@
       }}
 
 - name: Check if Cilium is already installed.
-  ansible.builtin.command: kubectl get daemonset cilium -n kube-system
+  ansible.builtin.command: kubectl get daemonset cilium -n kube-system -o jsonpath='{.spec.template.spec.containers[0].image}'
   register: cilium_installed
   changed_when: false
   failed_when: false
 
+- name: Set Cilium version changed fact.
+  ansible.builtin.set_fact:
+    cilium_version_changed: "{{ kubernetes_cilium_version not in (cilium_installed.stdout | default('')) }}"
+
 - name: Install Cilium networking.
-  ansible.builtin.command: cilium install --helm-values /tmp/cilium-values.yml --wait
+  ansible.builtin.command: "cilium install --version {{ kubernetes_cilium_version }} --helm-values /tmp/cilium-values.yml --wait"
   when: cilium_installed.rc != 0
 
 - name: Store Cilium values checksum after install.
@@ -66,12 +70,12 @@
   when: cilium_installed.rc != 0
 
 - name: Upgrade Cilium networking.
-  ansible.builtin.command: cilium upgrade --helm-values /tmp/cilium-values.yml --wait
-  when: cilium_installed.rc == 0 and (cilium_cli_outdated or cilium_config_changed)
+  ansible.builtin.command: "cilium upgrade --version {{ kubernetes_cilium_version }} --helm-values /tmp/cilium-values.yml --wait"
+  when: cilium_installed.rc == 0 and (cilium_cli_outdated or cilium_config_changed or cilium_version_changed)
 
 - name: Store Cilium values checksum.
   ansible.builtin.copy:
     content: "{{ cilium_values_checksum }}"
     dest: /etc/cilium-values.sha256
     mode: '0600'
-  when: cilium_installed.rc == 0 and (cilium_cli_outdated or cilium_config_changed)
+  when: cilium_installed.rc == 0 and (cilium_cli_outdated or cilium_config_changed or cilium_version_changed)
